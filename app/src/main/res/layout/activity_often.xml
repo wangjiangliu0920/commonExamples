@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context="com.icecold.sleepbandtest.OftenActivity">
+
+    <include layout="@layout/custom_toolbar"/>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        >
+        <com.github.mikephil.charting.charts.LineChart
+            android:id="@+id/heart_rate_chart"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+        </com.github.mikephil.charting.charts.LineChart>
+        <TextView
+            android:id="@+id/often_describe_hr_tv"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            style="@style/often_describe"
+            android:text="心率图"
+            android:textSize="30sp"
+            />
+        <TextView
+            android:id="@+id/often_hr_value_tv"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_above="@id/often_describe_hr_tv"
+            android:layout_centerInParent="true"
+            android:text="心率值"
+            android:textSize="12sp"
+            />
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        >
+        <com.github.mikephil.charting.charts.LineChart
+            android:id="@+id/breath_chart"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+        </com.github.mikephil.charting.charts.LineChart>
+        <TextView
+            android:id="@+id/often_describe_breath_tv"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            style="@style/often_describe"
+            android:text="呼吸图"
+            android:textSize="30sp"
+            />
+        <TextView
+            android:id="@+id/often_breath_value_tv"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_above="@id/often_describe_breath_tv"
+            android:layout_centerInParent="true"
+            android:text="呼吸值"
+            android:textSize="12sp"
+            />
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        >
+        <Button
+            android:id="@+id/not_displayLine"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:text="不显示呼吸率"
+            android:textSize="@dimen/sp_14"
+            />
+        <Button
+            android:id="@+id/displayLine"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/not_displayLine"
+            android:layout_centerHorizontal="true"
+            android:text="显示呼吸率"
+            android:textSize="@dimen/sp_14"
+            />
+    </RelativeLayout>
+
+</LinearLayout>

@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/white"
+    tools:context="com.icecold.sleepbandtest.EegActivity">
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+        <LinearLayout
+            android:orientation="vertical"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+            <TextView
+                android:id="@+id/eeg_tv_message"
+                android:layout_width="match_parent"
+                android:layout_height="200dp"
+                android:scrollbars="vertical"
+                android:fadeScrollbars="false"
+                android:scrollbarStyle="insideOverlay"
+                android:scrollbarFadeDuration="1000"
+                android:textSize="15sp"
+                android:textColor="#0e0e0e"
+                />
+            <Button
+                android:id="@+id/eeg_btn_connect"
+                android:text="@string/connect_device"
+                style="@style/Button.Style"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+            <Button
+                android:id="@+id/eeg_btn_disconnect"
+                android:text="@string/disconnect_device"
+                style="@style/Button.Style"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+            <Button
+                android:id="@+id/eeg_btn_sync_data"
+                android:text="@string/device_syncall_data"
+                style="@style/Button.Style"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+            <Button
+                android:id="@+id/eeg_btn_read_time"
+                android:text="@string/read_data_draw"
+                style="@style/Button.Style"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+            <Button
+                android:id="@+id/eeg_btn_erasure"
+                android:text="@string/device_erasure"
+                style="@style/Button.Style"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+            <Button
+                android:id="@+id/eeg_btn_storage"
+                android:text="@string/device_start_storage"
+                style="@style/Button.Style"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+            <com.github.mikephil.charting.charts.LineChart
+                android:id="@+id/eeg_line"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/dp_200"
+                android:layout_marginEnd="@dimen/dp_20"
+                >
+            </com.github.mikephil.charting.charts.LineChart>
+        </LinearLayout>
+    </ScrollView>
+
+</LinearLayout>
