@@ -26,6 +26,7 @@ import android.widget.Toast;
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
 import com.icecold.sleepbandtest.common.BluetoothDeviceManager;
+import com.icecold.sleepbandtest.common.ToastUtil;
 import com.icecold.sleepbandtest.event.CallbackDataEvent;
 import com.icecold.sleepbandtest.event.ConnectEvent;
 import com.icecold.sleepbandtest.event.NotifyDataEvent;
@@ -239,9 +240,12 @@ public class MainActivity extends AppCompatActivity {
                 integrator.initiateScan();
                 break;
             case R.id.btn_disconnect:
-                if (bluetoothLeDevice != null) {
-                    BluetoothDeviceManager.getInstance().disconnect(bluetoothLeDevice);
-                }
+                ToastUtil.show(this,"断开连接");
+                ToastUtil.showAtCenter(this,"断开连接");
+//                ToastUtil.makeText(this,"断开连接",Toast.LENGTH_SHORT);
+//                if (bluetoothLeDevice != null) {
+//                    BluetoothDeviceManager.getInstance().disconnect(bluetoothLeDevice);
+//                }
                 break;
             case R.id.btn_read_battery:
                 //读取电量
