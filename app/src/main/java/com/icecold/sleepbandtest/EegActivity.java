@@ -126,6 +126,7 @@ public class EegActivity extends AppCompatActivity {
     private int checkValue;
     private final Object lock = new Object();
 
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
