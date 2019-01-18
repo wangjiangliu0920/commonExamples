@@ -22,10 +22,10 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".MainActivity"
+        <activity
+            android:name=".MainActivity"
             android:configChanges="orientation|keyboardHidden|screenSize"
-            android:launchMode="singleTask"
-            >
+            android:launchMode="singleTask">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -44,9 +44,9 @@
         <activity
             android:name=".BrainwaveActivity"
             android:configChanges="orientation|screenSize|keyboardHidden"
-            android:screenOrientation="landscape"></activity>
-
-        <activity android:name=".EegActivity"></activity>
+            android:screenOrientation="landscape" />
+        <activity android:name=".EegActivity" />
+        <activity android:name=".SelectCityActivity"></activity>
     </application>
 
 </manifest>

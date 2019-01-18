@@ -1,6 +1,7 @@
 package com.icecold.sleepbandtest;
 
 import android.app.Application;
+import android.content.Context;
 import android.os.Bundle;
 
 import com.android.volley.Request;
@@ -11,6 +12,8 @@ import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.icecold.sleepbandtest.common.BluetoothDeviceManager;
 import com.icecold.sleepbandtest.utils.Constant;
+import com.polidea.rxandroidble2.RxBleClient;
+import com.polidea.rxandroidble2.internal.RxBleLog;
 import com.vise.xsnow.http.ViseHttp;
 
 import java.util.concurrent.TimeUnit;
@@ -24,11 +27,15 @@ import okhttp3.logging.HttpLoggingInterceptor;
 public class MyApplication extends Application {
 
     private static MyApplication instance;
+    private RxBleClient rxBleClient;
 
     @Override
     public void onCreate() {
         super.onCreate();
         instance = this;
+        //初始化另一个库的蓝牙
+        rxBleClient = RxBleClient.create(this);
+        RxBleClient.setLogLevel(RxBleLog.DEBUG);
         //初始化蓝牙
         BluetoothDeviceManager.getInstance().init(this);
 
@@ -61,5 +68,9 @@ public class MyApplication extends Application {
     }
     public static synchronized MyApplication getInstance(){
         return instance;
+    }
+    public static RxBleClient getRxBleClient(Context context){
+        MyApplication applicationContext = (MyApplication) context.getApplicationContext();
+        return applicationContext.rxBleClient;
     }
 }

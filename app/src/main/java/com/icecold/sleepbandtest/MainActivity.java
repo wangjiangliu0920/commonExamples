@@ -2,10 +2,10 @@ package com.icecold.sleepbandtest;
 
 import android.Manifest;
 import android.bluetooth.BluetoothGattDescriptor;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -26,10 +26,10 @@ import android.widget.Toast;
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
 import com.icecold.sleepbandtest.common.BluetoothDeviceManager;
-import com.icecold.sleepbandtest.common.ToastUtil;
 import com.icecold.sleepbandtest.event.CallbackDataEvent;
 import com.icecold.sleepbandtest.event.ConnectEvent;
 import com.icecold.sleepbandtest.event.NotifyDataEvent;
+import com.icecold.sleepbandtest.event.ScanDeviceEvent;
 import com.icecold.sleepbandtest.network.BandLoader;
 import com.icecold.sleepbandtest.network.BaseRequest;
 import com.icecold.sleepbandtest.utils.Constant;
@@ -39,6 +39,13 @@ import com.icecold.sleepbandtest.utils.ParcelableUtil;
 import com.icecold.sleepbandtest.utils.SPUtils;
 import com.icecold.sleepbandtest.utils.Utils;
 import com.icecold.sleepbandtest.widget.UncertainDialog;
+import com.polidea.rxandroidble2.RxBleAdapterStateObservable;
+import com.polidea.rxandroidble2.RxBleAdapterStateObservable_Factory;
+import com.polidea.rxandroidble2.RxBleConnection;
+import com.polidea.rxandroidble2.RxBleDevice;
+import com.polidea.rxandroidble2.scan.ScanFilter;
+import com.polidea.rxandroidble2.scan.ScanResult;
+import com.polidea.rxandroidble2.scan.ScanSettings;
 import com.vise.baseble.ViseBle;
 import com.vise.baseble.common.PropertyType;
 import com.vise.baseble.core.BluetoothGattChannel;
@@ -52,17 +59,36 @@ import com.vise.xsnow.event.Subscribe;
 import com.vise.xsnow.http.ViseHttp;
 import com.vise.xsnow.http.callback.ACallback;
 
+import org.greenrobot.eventbus.EventBus;
+
 import java.io.File;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
+import java.util.Locale;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
+import bleshadow.javax.inject.Provider;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import io.reactivex.Observable;
+import io.reactivex.ObservableEmitter;
+import io.reactivex.ObservableOnSubscribe;
+import io.reactivex.ObservableSource;
+import io.reactivex.SingleSource;
 import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.functions.Action;
 import io.reactivex.functions.Consumer;
+import io.reactivex.functions.Function;
+import io.reactivex.functions.Predicate;
+import io.reactivex.plugins.RxJavaPlugins;
 import io.reactivex.schedulers.Schedulers;
+import io.reactivex.schedulers.Timed;
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
@@ -74,6 +100,7 @@ public class MainActivity extends AppCompatActivity {
     private static final int SKIP_BYTE = 4;//需要跳过的字节数字
     private static final byte CYCLE_TIME = 0x0f;//循环的次数
     private static final int MY_PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE = 1;
+    private static final String MAC_ADDRESS = "D1:04:CC:0C:F1:F6";
     public static final String TAG = "MainActivity";
     @BindView(R.id.tv_message)
     TextView tvMessage;
@@ -116,6 +143,12 @@ public class MainActivity extends AppCompatActivity {
         }
     };
     private BandLoader bandLoader;
+    private Disposable stateDisposable;
+    private RxBleDevice rxBleDevice;
+    private CompositeDisposable servicesDisposable = new CompositeDisposable();
+    private Disposable connectDisposable;
+    private RxBleConnection mRxBleConnection;
+    private Disposable notificationDis;
 
     private void postFile(File file) {
         MultipartBody.Builder requestBoby = new MultipartBody.Builder().setType(MultipartBody.FORM);
@@ -173,6 +206,7 @@ public class MainActivity extends AppCompatActivity {
 
         initViewAndEvent();
         checkBluetoothPermission();
+        EventBus.getDefault().register(this);
         Log.i(TAG, "onCreate: 栈 id = "+getTaskId());
         ViseLog.i("栈 id = " + getTaskId());
 
@@ -187,8 +221,9 @@ public class MainActivity extends AppCompatActivity {
             } else {
                 String address = result.getContents();
                 refreshLogTextView("正在连接中稍等...\r\n");
-                String realAddress = reversalMacAddress(address);
-                BluetoothDeviceManager.getInstance().connectByMac(realAddress);
+                scanAndConnectDevice(address);
+//                String realAddress = reversalMacAddress(address);
+//                BluetoothDeviceManager.getInstance().connectByMac(realAddress);
             }
         }
         if (requestCode == RESULT_CANCELED) {
@@ -209,14 +244,16 @@ public class MainActivity extends AppCompatActivity {
     protected void onDestroy() {
         ViseLog.i("销毁界面");
         //移除所有的日志树
-//        ViseLog.uprootAll();
+        ViseLog.uprootAll();
         Log.i(TAG, "销毁界面 ");
         ViseHttp.cancelTag("zhidao");
         if (bluetoothLeDevice != null) {
             BluetoothDeviceManager.getInstance().setmDeviceReconnected(bluetoothLeDevice, false);
         }
+        servicesDisposable.clear();
 //        退出APP的时候需要清除所有的资源并且断开所有的连接
         ViseBle.getInstance().clear();
+        EventBus.getDefault().unregister(this);
         BusManager.getBus().unregister(this);
         super.onDestroy();
     }
@@ -231,30 +268,69 @@ public class MainActivity extends AppCompatActivity {
     public void allClickEvent(View view) {
         switch (view.getId()) {
             case R.id.btn_connect:
+//                switchFun();
 //                Intent intent3 = new Intent(this,OftenActivity.class);
 //                intent3.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 //                startActivity(intent3);
 //                showUncertainDialog();
+
                 IntentIntegrator integrator = new IntentIntegrator(this);
                 integrator.setOrientationLocked(false);
                 integrator.initiateScan();
                 break;
             case R.id.btn_disconnect:
-                ToastUtil.show(this,"断开连接");
-                ToastUtil.showAtCenter(this,"断开连接");
+                //断开连接以及停止搜索
+                servicesDisposable.clear();
+//                switchFun();
+
+//                ToastUtil.show(this,"断开连接");
+//                ToastUtil.showAtCenter(this,"断开连接");
 //                ToastUtil.makeText(this,"断开连接",Toast.LENGTH_SHORT);
 //                if (bluetoothLeDevice != null) {
 //                    BluetoothDeviceManager.getInstance().disconnect(bluetoothLeDevice);
 //                }
                 break;
             case R.id.btn_read_battery:
+                byte[] deleteUserData = new byte[]{0x44};
+                mRxBleConnection
+                        .writeCharacteristic(UUID.fromString(GlaUtils.BAND_PEGASI_LOG_DATA_CHARACTERISTIC_UUID),deleteUserData)
+                        .subscribeOn(Schedulers.computation())
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribe(new Consumer<byte[]>() {
+                            @Override
+                            public void accept(byte[] bytes) throws Exception {
+                                if (bytes[0] == 0x44){
+                                    refreshLogTextView("删除数据成功\r\n");
+                                }
+                            }
+                        }, new Consumer<Throwable>() {
+                            @Override
+                            public void accept(Throwable throwable) throws Exception {
+                                refreshLogTextView("删除数据失败\r\n");
+                            }
+                        });
+//                mRxBleConnection
+//                        .readCharacteristic(UUID.fromString(GlaUtils.PILLOW_CHAR_UUID_BLVL))
+//                        .observeOn(AndroidSchedulers.mainThread())
+//                        .subscribe(new Consumer<byte[]>() {
+//                            @Override
+//                            public void accept(byte[] bytes) throws Exception {
+//                                int batter = bytes[0] & 0xff;
+//                                refreshLogTextView("设备电量百分比 "+batter+"%\r\n");
+//                            }
+//                        }, new Consumer<Throwable>() {
+//                            @Override
+//                            public void accept(Throwable throwable) throws Exception {
+//                                refreshLogTextView("读取设备电量失败");
+//                            }
+//                        });
                 //读取电量
                 if (bluetoothLeDevice != null) {
 //                    BluetoothDeviceManager.getInstance().bindChannel(bluetoothLeDevice,PropertyType.PROPERTY_READ,
 //                            UUID.fromString(GlaUtils.PILLOW_SERV_UUID_BATT),UUID.fromString(GlaUtils.PILLOW_CHAR_UUID_BLVL),
 //                            null);
 //                    BluetoothDeviceManager.getInstance().read(bluetoothLeDevice);
-                    byte[] deleteUserData = new byte[]{0x44};
+
                     BluetoothDeviceManager.getInstance().bindChannel(bluetoothLeDevice, PropertyType.PROPERTY_WRITE,
                             UUID.fromString(GlaUtils.BAND_PEGASI_SERVICE_UUID),
                             UUID.fromString(GlaUtils.BAND_PEGASI_LOG_DATA_CHARACTERISTIC_UUID),
@@ -281,6 +357,41 @@ public class MainActivity extends AppCompatActivity {
                 }
                 break;
             case R.id.btn_read_time:
+                notificationDis = mRxBleConnection
+                        .setupNotification(UUID.fromString(GlaUtils.BAND_PEGASI_SYNC_TIME_CHARACTERISTIC_UUID))
+                        .doOnNext(new Consumer<Observable<byte[]>>() {
+                            @Override
+                            public void accept(Observable<byte[]> observable) throws Exception {
+                                byte[] timeRead = "R".getBytes();
+                                mRxBleConnection.writeCharacteristic(UUID.fromString(GlaUtils.BAND_PEGASI_SYNC_TIME_CHARACTERISTIC_UUID),timeRead)
+                                        .observeOn(AndroidSchedulers.mainThread())
+                                        .subscribe(new Consumer<byte[]>() {
+                                            @Override
+                                            public void accept(byte[] bytes) throws Exception {
+                                                refreshLogTextView("使能成功后写入读取时间的值\r\n");
+                                            }
+                                        });
+                                ViseLog.d("使能notification");
+                            }
+                        })
+                        .flatMap(new Function<Observable<byte[]>, ObservableSource<byte[]>>() {
+                            @Override
+                            public ObservableSource<byte[]> apply(Observable<byte[]> observable) throws Exception {
+                                return observable;
+                            }
+                        })
+                        .subscribe(new Consumer<byte[]>() {
+                            @Override
+                            public void accept(byte[] bytes) throws Exception {
+                                String hexStr = HexUtil.encodeHexStr(bytes);
+                                ViseLog.d("使能得到的值 = " + hexStr);
+                            }
+                        }, new Consumer<Throwable>() {
+                            @Override
+                            public void accept(Throwable throwable) throws Exception {
+                                ViseLog.d("使能错误 msg = " + throwable.getMessage());
+                            }
+                        });
                 //读取时间
                 if (bluetoothLeDevice != null) {
                     BluetoothDeviceManager.getInstance().bindChannel(bluetoothLeDevice, PropertyType.PROPERTY_READ,
@@ -323,8 +434,8 @@ public class MainActivity extends AppCompatActivity {
                 }
                 break;
             case R.id.btn_skip_next:
-                Intent intent = new Intent(this, EegActivity.class);
-                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+                Intent intent = new Intent(this, SelectCityActivity.class);
+//                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
                 startActivity(intent);
                 break;
             case R.id.btn_firmware_update:
@@ -366,6 +477,146 @@ public class MainActivity extends AppCompatActivity {
             default:
                 break;
         }
+    }
+
+    @org.greenrobot.eventbus.Subscribe
+    public void deviceConnectedState(ScanDeviceEvent scanDeviceEvent){
+        if (scanDeviceEvent.isScanSuccess()) {
+            refreshLogTextView("连接设备成功\r\n");
+            //搜索到设备，发起连接以及同步时间操作
+            if (scanDeviceEvent.getRxBleDevice() != null) {
+                rxBleDevice = scanDeviceEvent.getRxBleDevice();
+                long currentWriteTime = System.currentTimeMillis() / 1000;
+                byte[] writeDeviceTime = "W".getBytes();
+                final byte[] data = new byte[]{writeDeviceTime[0],(byte) (currentWriteTime & 0xff),
+                        (byte) ((currentWriteTime >> 8) & 0xff),
+                        (byte) ((currentWriteTime >> 16) & 0xff),
+                        (byte) ((currentWriteTime >> 24) & 0xff),
+                        (byte) 0, (byte) 0, (byte) 0, (byte) 0};
+                String hexStr = HexUtil.encodeHexStr(data);
+                ViseLog.d("写入的值的hex = "+hexStr);
+                connectDisposable = rxBleDevice.establishConnection(false)
+                        .subscribeOn(Schedulers.io())
+                        .flatMapSingle(new Function<RxBleConnection, SingleSource<byte[]>>() {
+                            @Override
+                            public SingleSource<byte[]> apply(RxBleConnection rxBleConnection) throws Exception {
+                                mRxBleConnection = rxBleConnection;
+                                return rxBleConnection.writeCharacteristic(UUID.fromString(GlaUtils.BAND_PEGASI_SYNC_TIME_CHARACTERISTIC_UUID), data);
+                            }
+                        })
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribe(new Consumer<byte[]>() {
+                            @Override
+                            public void accept(byte[] bytes) throws Exception {
+                                String writeString = HexUtil.encodeHexStr(bytes);
+                                ViseLog.d("写入成功了,写入的值是" + writeString);
+                            }
+                        }, new Consumer<Throwable>() {
+                            @Override
+                            public void accept(Throwable throwable) throws Exception {
+                                ViseLog.i("写操作不成功 msg = "+throwable.getMessage());
+                            }
+                        });
+                servicesDisposable.add(connectDisposable);
+            }
+        }
+        if (scanDeviceEvent.isScanTimeout()) {
+            refreshLogTextView("搜索设备超时\r\n");
+            ViseLog.d("搜索设备超时了");
+        }
+    }
+
+    private void switchFun() {
+        Observable<Integer> integerObservable = Observable.create(new ObservableOnSubscribe<Integer>() {
+            @Override
+            public void subscribe(ObservableEmitter<Integer> emitter) throws Exception {
+                for (int i = 0; i < 5; i++) {
+                    if (i > 2) {
+                        emitter.onError(new RuntimeException("VALUE TO MAX"));
+                    }
+                    emitter.onNext(i);
+                }
+                emitter.onComplete();
+            }
+        }).subscribeOn(Schedulers.computation());
+        final SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss", Locale.CHINA);
+        ViseLog.d("delay start :"+dateFormat.format(new Date()));
+        integerObservable
+                .delay(3,TimeUnit.SECONDS)
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Consumer<Integer>() {
+                    @Override
+                    public void accept(Integer integer) throws Exception {
+                        ViseLog.i("delay onNext: " + dateFormat.format(new Date()) + "-->" + integer);
+                    }
+                }, new Consumer<Throwable>() {
+                    @Override
+                    public void accept(Throwable throwable) throws Exception {
+                        ViseLog.i("delay onError "+throwable.getMessage()+" thread = "+Thread.currentThread().getName());
+                    }
+                }, new Action() {
+                    @Override
+                    public void run() throws Exception {
+                        ViseLog.i("delay onCompleted time = "+dateFormat.format(new Date())+" thread = "+Thread.currentThread().getName());
+                    }
+                });
+        RxJavaPlugins.setErrorHandler(new Consumer<Throwable>() {
+            @Override
+            public void accept(Throwable throwable) throws Exception {
+                if (throwable instanceof RuntimeException) {
+                    ViseLog.i("runTime cause = "+throwable.getCause().getMessage());
+                }
+                ViseLog.i("错误处理器处理错误  msg = "+throwable.getMessage());
+            }
+        });
+        ViseLog.d("delaySubscription start:"+dateFormat.format(new Date()));
+        integerObservable
+                .delaySubscription(3,TimeUnit.SECONDS)
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Consumer<Integer>() {
+                    @Override
+                    public void accept(Integer integer) throws Exception {
+                        ViseLog.i("delaySubscription onNext:"+dateFormat.format(new Date())+"-->"+integer);
+                    }
+                }, new Consumer<Throwable>() {
+                    @Override
+                    public void accept(Throwable throwable) throws Exception {
+                        ViseLog.i("delaySubscription onError "+throwable.getMessage()+" thread = "+Thread.currentThread().getName());
+                    }
+                }, new Action() {
+                    @Override
+                    public void run() throws Exception {
+                        ViseLog.i("delaySubscription onCompleted time = "+dateFormat.format(new Date())+" thread = "+Thread.currentThread().getName());
+                    }
+                });
+//        Disposable disposable = Observable.just(5)
+//                .subscribeOn(Schedulers.io())
+//                .switchMap(new Function<Integer, ObservableSource<String>>() {
+//                    @Override
+//                    public ObservableSource<String> apply(Integer integer) throws Exception {
+//                        String[] showText = new String[integer];
+//                        for (Integer i = 0; i < integer; i++) {
+//                            showText[i] = "显示的值 value = " + i;
+//                        }
+//                        ViseLog.i(Thread.currentThread().getName());
+//                        return Observable.fromArray(showText);
+//                    }
+//                })
+//                .observeOn(AndroidSchedulers.mainThread())
+//                .doFinally(new Action() {
+//                    @Override
+//                    public void run() throws Exception {
+//                        ViseLog.i(Thread.currentThread().getName());
+//                        ViseLog.d("说明取消订阅了");
+//                    }
+//                })
+//                .subscribe(new Consumer<String>() {
+//                    @Override
+//                    public void accept(String s) throws Exception {
+//                        ViseLog.i(s);
+//                    }
+//                });
+//        disposable.dispose();
     }
 
     private void showUncertainDialog() {
@@ -683,8 +934,142 @@ public class MainActivity extends AppCompatActivity {
         });
         tvMessage.setMovementMethod(ScrollingMovementMethod.getInstance());
     }
+    private void scanAndConnectDevice(final String macAddress){
+        final long[] startTime = new long[1];
+        startTime[0] = System.currentTimeMillis() / 1000;
+        Disposable scanDeviceDisposable = MyApplication.getRxBleClient(this)
+                .scanBleDevices(
+                        new ScanSettings.Builder()
+                                .setScanMode(ScanSettings.SCAN_MODE_LOW_POWER)
+                                .setCallbackType(ScanSettings.CALLBACK_TYPE_ALL_MATCHES)
+                                .build(),
+                        new ScanFilter.Builder()
+//                .setDeviceAddress(MAC_ADDRESS)
+                                .build())
+                .timestamp(TimeUnit.SECONDS)
+                .subscribeOn(Schedulers.io())
+                //实现类似于超时时间与过滤的设置的操作
+                .filter(new Predicate<Timed<ScanResult>>() {
+                    @Override
+                    public boolean test(Timed<ScanResult> scanResultTimed) throws Exception {
+                        long time = scanResultTimed.time(TimeUnit.SECONDS);
+                        if (time - startTime[0] > 60) {//超时的时间设置
+                            ViseLog.d("返回false ");
+//                            return false;
+                            throw new RuntimeException("超时了");
+                        } else if (scanResultTimed.value().getBleDevice().getMacAddress().equals(macAddress)) {
+                            ViseLog.d("返回true ");
+                            return true;
+                        } else {
+                            return false;
+                        }
+                    }
+                })
+                .firstElement()
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Consumer<Timed<ScanResult>>() {
+                    @Override
+                    public void accept(Timed<ScanResult> scanResultTimed) throws Exception {
+                        EventBus.getDefault().post(
+                                new ScanDeviceEvent()
+                                        .setScanSuccess(true)
+                                        .setRxBleDevice(scanResultTimed.value().getBleDevice()));
+                    }
+                }, new Consumer<Throwable>() {
+                    @Override
+                    public void accept(Throwable throwable) throws Exception {
+                        EventBus.getDefault().post(
+                                new ScanDeviceEvent()
+                                        .setScanTimeout(true));
+                    }
+                });
+        servicesDisposable.add(scanDeviceDisposable);
+    }
 
     private void checkBluetoothPermission() {
+        RxBleAdapterStateObservable_Factory stateObservableFactory = RxBleAdapterStateObservable_Factory.create(new Provider<Context>() {
+            @Override
+            public Context get() {
+                return MainActivity.this;
+            }
+        });
+        Disposable stateDisposable = stateObservableFactory.get().subscribe(new Consumer<RxBleAdapterStateObservable.BleAdapterState>() {
+            @Override
+            public void accept(RxBleAdapterStateObservable.BleAdapterState bleAdapterState) throws Exception {
+                if (RxBleAdapterStateObservable.BleAdapterState.STATE_ON == bleAdapterState) {
+                    ViseLog.d("蓝牙打开了");
+                }
+                if (RxBleAdapterStateObservable.BleAdapterState.STATE_OFF == bleAdapterState) {
+                    ViseLog.d("蓝牙关闭了");
+                }
+//                ViseLog.i("观察的状态 "+bleAdapterState.isUsable());
+            }
+        });
+        servicesDisposable.add(stateDisposable);
+        /*
+        final long[] startTime = new long[1];
+        stateDisposable = MyApplication.getRxBleClient(this)
+                .observeStateChanges()
+                .switchMap(new Function<RxBleClient.State, ObservableSource<Timed<ScanResult>>>() {
+                    @Override
+                    public ObservableSource<Timed<ScanResult>> apply(RxBleClient.State state) throws Exception {
+                        switch (state) {
+                            case READY:
+                                startTime[0] = System.currentTimeMillis() / 1000;
+                                ViseLog.d("开始的观察时间 = "+startTime[0]);
+                                return MyApplication.getRxBleClient(MainActivity.this)
+                                        .scanBleDevices(
+                                                new ScanSettings.Builder()
+                                                        .setCallbackType(ScanSettings.CALLBACK_TYPE_ALL_MATCHES)
+                                                        .setScanMode(ScanSettings.SCAN_MODE_LOW_POWER)
+                                                        .build(),
+                                                new ScanFilter.Builder()
+//                                                        .setDeviceAddress("D1:04:CC:0C:F1:F6")
+                                                        .build())
+                                        .timestamp(TimeUnit.SECONDS);
+                            case BLUETOOTH_NOT_AVAILABLE:
+                            case BLUETOOTH_NOT_ENABLED:
+                                enableBluetooth();
+                            case LOCATION_SERVICES_NOT_ENABLED:
+                            case LOCATION_PERMISSION_NOT_GRANTED:
+                            default:
+                                return Observable.empty();
+                        }
+                    }
+                })
+                //实现类似于超时时间与过滤的设置的操作
+                .filter(new Predicate<Timed<ScanResult>>() {
+                    @Override
+                    public boolean test(Timed<ScanResult> scanResultTimed) throws Exception {
+                        long time = scanResultTimed.time(TimeUnit.SECONDS);
+                        if (time - startTime[0] > 60){//超时的时间设置
+                            ViseLog.d("返回false ");
+//                            return false;
+                            throw new RuntimeException("超时了");
+                        }else if (scanResultTimed.value().getBleDevice().getMacAddress().equals(MAC_ADDRESS)){
+                            ViseLog.d("返回true ");
+                            return true;
+                        }else {
+                            return false;
+                        }
+                    }
+                })
+                .firstElement()//只会发射被观察者的onNext中的第一项元素,发完以后就会调用Cancel取消订阅
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Consumer<Timed<ScanResult>>() {
+                    @Override
+                    public void accept(Timed<ScanResult> scanResultTimed) throws Exception {
+                        ViseLog.d("搜索到设备信息 = " + scanResultTimed.value().getBleDevice().getMacAddress());
+                    }
+                }, new Consumer<Throwable>() {
+                    @Override
+                    public void accept(Throwable throwable) throws Exception {
+                        ViseLog.d("发生错误 = " + throwable.getMessage());
+                    }
+                });
+        servicesDisposable.add(stateDisposable);
+        */
+        /*
         //判断是不是6.0以上的设备
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             //判断是否有权限
@@ -705,6 +1090,7 @@ public class MainActivity extends AppCompatActivity {
             //判断手机是否打开蓝牙
             enableBluetooth();
         }
+        */
     }
 
     private void enableBluetooth() {
