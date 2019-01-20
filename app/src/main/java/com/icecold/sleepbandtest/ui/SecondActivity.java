@@ -1,4 +1,4 @@
-package com.icecold.sleepbandtest;
+package com.icecold.sleepbandtest.ui;
 
 import android.animation.ValueAnimator;
 import android.content.Intent;
@@ -18,6 +18,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ViewFlipper;
 
+import com.icecold.sleepbandtest.R;
 import com.icecold.sleepbandtest.utils.ValueAnimatorUtil;
 import com.icecold.sleepbandtest.widget.CircleProgressbar;
 import com.vise.log.ViseLog;

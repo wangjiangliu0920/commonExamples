@@ -1,4 +1,4 @@
-package com.icecold.sleepbandtest;
+package com.icecold.sleepbandtest.ui;
 
 import android.bluetooth.BluetoothGattDescriptor;
 import android.graphics.Color;
@@ -20,6 +20,7 @@ import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
 import com.github.mikephil.charting.utils.ColorTemplate;
+import com.icecold.sleepbandtest.R;
 import com.icecold.sleepbandtest.common.BluetoothDeviceManager;
 import com.icecold.sleepbandtest.event.CallbackDataEvent;
 import com.icecold.sleepbandtest.event.NotifyDataEvent;

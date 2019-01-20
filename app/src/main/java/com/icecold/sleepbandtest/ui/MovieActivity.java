@@ -1,4 +1,4 @@
-package com.icecold.sleepbandtest;
+package com.icecold.sleepbandtest.ui;
 
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
@@ -8,6 +8,7 @@ import android.support.v7.widget.Toolbar;
 import android.view.View;
 
 import com.chad.library.adapter.base.BaseQuickAdapter;
+import com.icecold.sleepbandtest.R;
 import com.icecold.sleepbandtest.adapter.MovieAdapter;
 import com.icecold.sleepbandtest.adapter.decoration.MovieDecoration;
 import com.icecold.sleepbandtest.entity.Movie;

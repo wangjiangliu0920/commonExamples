@@ -85,4 +85,5 @@ dependencies {
     }
     //里面已经依赖了rxJava2
     implementation "com.polidea.rxandroidble2:rxandroidble:1.8.0"
+    implementation 'com.github.prolificinteractive:material-calendarview:1.4.3'
 }

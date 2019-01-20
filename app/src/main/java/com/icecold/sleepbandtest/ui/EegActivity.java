@@ -1,4 +1,4 @@
-package com.icecold.sleepbandtest;
+package com.icecold.sleepbandtest.ui;
 
 import android.Manifest;
 import android.bluetooth.BluetoothGattDescriptor;
@@ -32,6 +32,7 @@ import com.github.mikephil.charting.formatter.IAxisValueFormatter;
 import com.github.mikephil.charting.utils.ColorTemplate;
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
+import com.icecold.sleepbandtest.R;
 import com.icecold.sleepbandtest.common.BluetoothDeviceManager;
 import com.icecold.sleepbandtest.common.formatter.SleepTimeAxisValueFormatter;
 import com.icecold.sleepbandtest.entity.EegInformation;

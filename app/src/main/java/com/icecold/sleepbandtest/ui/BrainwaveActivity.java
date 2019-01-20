@@ -1,4 +1,4 @@
-package com.icecold.sleepbandtest;
+package com.icecold.sleepbandtest.ui;
 
 import android.Manifest;
 import android.content.Intent;
@@ -24,6 +24,7 @@ import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
 import com.github.mikephil.charting.utils.ColorTemplate;
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
+import com.icecold.sleepbandtest.R;
 import com.icecold.sleepbandtest.common.BluetoothDeviceManager;
 import com.icecold.sleepbandtest.event.CallbackDataEvent;
 import com.icecold.sleepbandtest.event.ConnectEvent;

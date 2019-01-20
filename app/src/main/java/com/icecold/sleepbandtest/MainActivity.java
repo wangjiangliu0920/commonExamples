@@ -14,24 +14,36 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.DividerItemDecoration;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
+import android.text.Editable;
+import android.text.TextUtils;
+import android.text.TextWatcher;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Base64;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
+import com.icecold.sleepbandtest.adapter.CityAdapter;
 import com.icecold.sleepbandtest.common.BluetoothDeviceManager;
+import com.icecold.sleepbandtest.common.CustomPopWindow;
 import com.icecold.sleepbandtest.event.CallbackDataEvent;
 import com.icecold.sleepbandtest.event.ConnectEvent;
 import com.icecold.sleepbandtest.event.NotifyDataEvent;
 import com.icecold.sleepbandtest.event.ScanDeviceEvent;
 import com.icecold.sleepbandtest.network.BandLoader;
 import com.icecold.sleepbandtest.network.BaseRequest;
+import com.icecold.sleepbandtest.ui.SelectCityActivity;
 import com.icecold.sleepbandtest.utils.Constant;
 import com.icecold.sleepbandtest.utils.FileUtil;
 import com.icecold.sleepbandtest.utils.GlaUtils;
@@ -66,6 +78,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -127,6 +140,8 @@ public class MainActivity extends AppCompatActivity {
     private BluetoothLeDevice bluetoothLeDevice;
     private ArrayList<String> totalSleepData = new ArrayList<>();
     private int sendReadDataItem;
+    private ArrayList<String> cityItem;
+    private ArrayList<String> lastCity;
     private Runnable writeFileRun = new Runnable() {
 
         @Override
@@ -149,6 +164,7 @@ public class MainActivity extends AppCompatActivity {
     private Disposable connectDisposable;
     private RxBleConnection mRxBleConnection;
     private Disposable notificationDis;
+    private CityAdapter mCityAdapter;
 
     private void postFile(File file) {
         MultipartBody.Builder requestBoby = new MultipartBody.Builder().setType(MultipartBody.FORM);
@@ -417,9 +433,18 @@ public class MainActivity extends AppCompatActivity {
                 }
                 break;
             case R.id.btn_open_time:
-
-                Intent intent2 = new Intent(this, OftenActivity.class);
-                startActivity(intent2);
+                View contentView = LayoutInflater.from(this).inflate(R.layout.activity_select_city, null);
+                //处理popWindow的显示内容
+                handleLogic(contentView);
+                //创建并且显示popWindow
+                CustomPopWindow customPopWindow = new CustomPopWindow.PopupWindowBuilder(this)
+                        .setView(contentView)
+                        .enableOutsideTouchableDissmiss(true)
+                        .size(openTime.getWidth(), ViewGroup.LayoutParams.WRAP_CONTENT)
+                        .create()
+                        .showAsDropDown(openTime, 0, 15);
+//                Intent intent2 = new Intent(this, OftenActivity.class);
+//                startActivity(intent2);
 
                 break;
             case R.id.btn_off_time:
@@ -477,6 +502,102 @@ public class MainActivity extends AppCompatActivity {
             default:
                 break;
         }
+    }
+
+    private void handleLogic(View contentView) {
+        initDefaultCityData();
+        RecyclerView cityRecyclerView = contentView.findViewById(R.id.recycler_view_city);
+        EditText searchCityText = contentView.findViewById(R.id.searchCity);
+
+        //设置recyclerView相关的
+        LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this) {
+            @Override
+            public void onMeasure(RecyclerView.Recycler recycler, RecyclerView.State state, int widthSpec, int heightSpec) {
+//                View view = recycler.getViewForPosition(0);
+//                if (view != null) {
+//                    measureChild(view,widthSpec,heightSpec);
+//                    int measureWidth = View.MeasureSpec.getSize(widthSpec);
+//                    int measuredHeight = view.getMeasuredHeight();
+//                    int showHeight = measuredHeight * state.getItemCount();
+//                    if (state.getItemCount() > 5){
+//                        showHeight = measuredHeight * 5;
+//                    }
+//                    recycler.recycleView(view);
+//                    setMeasuredDimension(measureWidth,showHeight);
+//                }
+                try {
+                    if (mCityAdapter != null && mCityAdapter.getItemHeight() > 0){
+                        int measureWidth = View.MeasureSpec.getSize(widthSpec);
+                        int itemHeight = mCityAdapter.getItemHeight();
+                        int showHeight = itemHeight * state.getItemCount();
+                        if (state.getItemCount() > 3){
+                            showHeight = itemHeight * 3;
+                        }
+                        setMeasuredDimension(measureWidth,showHeight);
+                    }else {
+                        super.onMeasure(recycler, state, widthSpec, heightSpec);
+                    }
+                }catch (Exception e){
+                    super.onMeasure(recycler, state, widthSpec, heightSpec);
+                }
+            }
+        };
+        linearLayoutManager.setAutoMeasureEnabled(false);
+        LinearLayoutManager layoutManager = new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false);
+        layoutManager.setAutoMeasureEnabled(true);
+        cityRecyclerView.setHasFixedSize(false);
+        cityRecyclerView.setLayoutManager(linearLayoutManager);
+        cityRecyclerView.addItemDecoration(new DividerItemDecoration(this,DividerItemDecoration.VERTICAL));
+        mCityAdapter = new CityAdapter(R.layout.content_city, cityItem);
+        cityRecyclerView.setAdapter(mCityAdapter);
+
+        //设置searchEditText相关的
+        searchCityText.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+                if (TextUtils.isEmpty(editable.toString())) {
+                    updateData(cityItem);
+                }else {
+                    lastCity.clear();
+                    for (String city : cityItem) {
+                        if (city.contains(editable.toString().trim())) {
+                            lastCity.add(city);
+                        }
+                    }
+                    updateData(lastCity);
+                }
+            }
+        });
+    }
+
+    private void initDefaultCityData() {
+        cityItem = new ArrayList<>();
+        lastCity = new ArrayList<>();
+        cityItem.add("Mumbai");
+        cityItem.add("Delhi");
+        cityItem.add("Bengaluru");
+        cityItem.add("Hyderabad");
+        cityItem.add("Ahmedabad");
+        cityItem.add("Chennai");
+        cityItem.add("Kolkata");
+        cityItem.add("Surat");
+        cityItem.add("Pune");
+        cityItem.add("Jaipur");
+        cityItem.add("Lucknow");
+        cityItem.add("Kanpur");
+    }
+    private void updateData(List<String> mData) {
+        mCityAdapter.setNewData(mData);
     }
 
     @org.greenrobot.eventbus.Subscribe

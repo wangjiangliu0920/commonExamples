@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="@android:color/darker_gray"
-    tools:context="com.icecold.sleepbandtest.MovieActivity">
+    tools:context="com.icecold.sleepbandtest.ui.MovieActivity">
 
     <android.support.v7.widget.Toolbar
         android:id="@+id/movie_toolbar"

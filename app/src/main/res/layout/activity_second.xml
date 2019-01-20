@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    tools:context="com.icecold.sleepbandtest.SecondActivity">
+    tools:context="com.icecold.sleepbandtest.ui.SecondActivity">
     <com.icecold.sleepbandtest.widget.CircleProgressbar
         android:id="@+id/circle_progress"
         android:layout_width="200dp"
