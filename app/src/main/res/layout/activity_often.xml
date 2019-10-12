@@ -5,9 +5,18 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
+    android:background="@color/white"
     tools:context="com.icecold.sleepbandtest.ui.OftenActivity">
 
     <include layout="@layout/custom_toolbar"/>
+    <TextView
+        android:id="@+id/often_bed_state"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:text="在床状态"
+        android:textSize="15sp"
+        />
 
     <RelativeLayout
         android:layout_width="match_parent"
@@ -36,7 +45,7 @@
             android:layout_above="@id/often_describe_hr_tv"
             android:layout_centerInParent="true"
             android:text="心率值"
-            android:textSize="12sp"
+            android:textSize="20sp"
             />
     </RelativeLayout>
 
@@ -67,14 +76,75 @@
             android:layout_above="@id/often_describe_breath_tv"
             android:layout_centerInParent="true"
             android:text="呼吸值"
-            android:textSize="12sp"
+            android:textSize="20sp"
             />
     </RelativeLayout>
-
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
+        >
+        <com.github.mikephil.charting.charts.LineChart
+            android:id="@+id/body_move_chart"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+        </com.github.mikephil.charting.charts.LineChart>
+        <TextView
+            android:id="@+id/often_describe_body_move_tv"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            style="@style/often_describe"
+            android:text="体动图"
+            android:textSize="30sp"
+            />
+        <TextView
+            android:id="@+id/often_body_move_value_tv"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_above="@id/often_describe_body_move_tv"
+            android:layout_centerInParent="true"
+            android:text="体动值"
+            android:textSize="20sp"
+            />
+    </RelativeLayout>
+    <RelativeLayout
+        android:id="@+id/heart_rate_rl_two"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        >
+        <com.github.mikephil.charting.charts.LineChart
+            android:id="@+id/heart_rate_chart_two"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+        </com.github.mikephil.charting.charts.LineChart>
+        <TextView
+            android:id="@+id/often_describe_hr_two_tv"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            style="@style/often_describe"
+            android:text="心率图"
+            android:textSize="30sp"
+            />
+        <TextView
+            android:id="@+id/often_hr_value_two_tv"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_above="@id/often_describe_hr_two_tv"
+            android:layout_centerInParent="true"
+            android:text="心率值"
+            android:textSize="20sp"
+            />
+    </RelativeLayout>
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:visibility="gone"
         >
         <Button
             android:id="@+id/not_displayLine"
@@ -94,5 +164,69 @@
             android:textSize="@dimen/sp_14"
             />
     </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/breath_rl_two"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        >
+        <com.github.mikephil.charting.charts.LineChart
+            android:id="@+id/breath_chart_two"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+        </com.github.mikephil.charting.charts.LineChart>
+        <TextView
+            android:id="@+id/often_describe_breath_two_tv"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            style="@style/often_describe"
+            android:text="呼吸图"
+            android:textSize="30sp"
+            />
+        <TextView
+            android:id="@+id/often_breath_value_two_tv"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_above="@id/often_describe_breath_two_tv"
+            android:layout_centerInParent="true"
+            android:text="呼吸值"
+            android:textSize="20sp"
+            />
+    </RelativeLayout>
+    <RelativeLayout
+        android:id="@+id/body_move_rl_two"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        >
+        <com.github.mikephil.charting.charts.LineChart
+            android:id="@+id/body_move_chart_two"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+        </com.github.mikephil.charting.charts.LineChart>
+        <TextView
+            android:id="@+id/often_describe_body_move_two_tv"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            style="@style/often_describe"
+            android:text="体动图"
+            android:textSize="30sp"
+            />
+        <TextView
+            android:id="@+id/often_body_move_value_two_tv"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_above="@id/often_describe_body_move_two_tv"
+            android:layout_centerInParent="true"
+            android:text="体动值"
+            android:textSize="20sp"
+            />
+    </RelativeLayout>
+
 
 </LinearLayout>

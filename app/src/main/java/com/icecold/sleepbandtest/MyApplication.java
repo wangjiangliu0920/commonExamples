@@ -2,15 +2,9 @@ package com.icecold.sleepbandtest;
 
 import android.app.Application;
 import android.content.Context;
-import android.os.Bundle;
 
-import com.android.volley.Request;
-import com.android.volley.RequestQueue;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
-import com.android.volley.toolbox.StringRequest;
-import com.android.volley.toolbox.Volley;
 import com.icecold.sleepbandtest.common.BluetoothDeviceManager;
+import com.icecold.sleepbandtest.db.DbCore;
 import com.icecold.sleepbandtest.utils.Constant;
 import com.polidea.rxandroidble2.RxBleClient;
 import com.polidea.rxandroidble2.internal.RxBleLog;
@@ -38,6 +32,10 @@ public class MyApplication extends Application {
         RxBleClient.setLogLevel(RxBleLog.DEBUG);
         //初始化蓝牙
         BluetoothDeviceManager.getInstance().init(this);
+        //初始化数据库
+        DbCore.init(this);
+        //打开调试
+        DbCore.enableQueryBuilderLog();
 
         HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor();
         loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
@@ -50,6 +48,7 @@ public class MyApplication extends Application {
                 .retryCount(2)
                 .retryDelayMillis(1000)
                 .interceptor(loggingInterceptor);
+        /*
         RequestQueue mQueue = Volley.newRequestQueue(this);
         Bundle bundle = new Bundle();
         StringRequest stringRequest = new StringRequest(Request.Method.GET, "", new Response.Listener<String>() {
@@ -65,6 +64,7 @@ public class MyApplication extends Application {
         });
         stringRequest.setShouldCache(true);
         mQueue.add(stringRequest);
+        */
     }
     public static synchronized MyApplication getInstance(){
         return instance;

@@ -1,7 +1,6 @@
 package com.icecold.sleepbandtest.ui;
 
 import android.os.Bundle;
-import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -16,9 +15,6 @@ import com.icecold.sleepbandtest.R;
 import com.icecold.sleepbandtest.adapter.CityAdapter;
 import com.icecold.sleepbandtest.adapter.SyLinearLayoutManager;
 import com.icecold.sleepbandtest.adapter.decoration.MovieDecoration;
-import com.prolificinteractive.materialcalendarview.CalendarDay;
-import com.prolificinteractive.materialcalendarview.MaterialCalendarView;
-import com.prolificinteractive.materialcalendarview.OnDateSelectedListener;
 import com.vise.log.ViseLog;
 
 import java.lang.reflect.Field;
@@ -29,6 +25,8 @@ import java.util.concurrent.TimeUnit;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import cn.aigestudio.datepicker.cons.DPMode;
+import cn.aigestudio.datepicker.views.DatePicker;
 import io.reactivex.Observable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
@@ -42,7 +40,7 @@ public class SelectCityActivity extends AppCompatActivity {
     @BindView(R.id.recycler_view_city)
     RecyclerView cityRecyclerView;
     @BindView(R.id.calendarView)
-    MaterialCalendarView mCalendarView;
+    DatePicker mCalendarView;
     @BindView(R.id.select_calendar)
     EditText mSelectCalendar;
     private CityAdapter cityAdapter;
@@ -174,15 +172,34 @@ public class SelectCityActivity extends AppCompatActivity {
         //日历相关的内容
         Calendar calendar = Calendar.getInstance();
         calendar.setTimeInMillis(System.currentTimeMillis());
-        mCalendarView.setDateSelected(calendar, true);
-        mCalendarView.setOnDateChangedListener(new OnDateSelectedListener() {
+//        mCalendarView.setLocale(TimeZone.getDefault(), Locale.CHINESE);
+//        mCalendarView.setUseThreeLetterAbbreviation(true);
+//        mCalendarView.setListener(new CompactCalendarView.CompactCalendarViewListener() {
+//            @Override
+//            public void onDayClick(Date date) {
+//                ViseLog.d("日期 : " + date.getYear() + "-" + date.getMonth() + 1 + "-" + date.getDay());
+//            }
+//
+//            @Override
+//            public void onMonthScroll(Date firstDayOfNewMonth) {
+//                ViseLog.d("onMonthScroll "+firstDayOfNewMonth.toString());
+//            }
+//        });
+
+//        setEditTextShowSoftInput(mSelectCalendar,false);
+        mCalendarView.setDate(calendar.get(Calendar.YEAR),calendar.get(Calendar.MONTH)+1);
+        mCalendarView.setMode(DPMode.SINGLE);
+        mCalendarView.setTodayDisplay(true);
+        mCalendarView.setDeferredDisplay(false);
+        mCalendarView.setHolidayDisplay(false);
+        mCalendarView.setFestivalDisplay(false);
+        mCalendarView.setOnDatePickedListener(new DatePicker.OnDatePickedListener() {
             @Override
-            public void onDateSelected(@NonNull MaterialCalendarView widget, @NonNull CalendarDay date, boolean selected) {
-                ViseLog.d("日期 : " + date.getYear() + "-" + date.getMonth() + 1 + "-" + date.getDay());
-                ViseLog.d("控件显示的日期 = " + widget.getSelectedDate().toString() + " 日期 = " + date.toString() + " 选择 = " + selected);
+            public void onDatePicked(String date) {
+                ViseLog.d("选择的日期 = "+date);
             }
         });
-//        setEditTextShowSoftInput(mSelectCalendar,false);
+
         mSelectCalendar.setFocusable(false);
         mSelectCalendar.setOnClickListener(new View.OnClickListener() {
             @Override

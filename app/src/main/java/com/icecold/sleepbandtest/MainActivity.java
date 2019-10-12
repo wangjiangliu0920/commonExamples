@@ -1,11 +1,13 @@
 package com.icecold.sleepbandtest;
 
 import android.Manifest;
+import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGattDescriptor;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -23,10 +25,8 @@ import android.text.TextWatcher;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Base64;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -36,14 +36,17 @@ import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
 import com.icecold.sleepbandtest.adapter.CityAdapter;
 import com.icecold.sleepbandtest.common.BluetoothDeviceManager;
-import com.icecold.sleepbandtest.common.CustomPopWindow;
+import com.icecold.sleepbandtest.entity.BaseResponse;
+import com.icecold.sleepbandtest.entity.QuestionInfoData;
 import com.icecold.sleepbandtest.event.CallbackDataEvent;
 import com.icecold.sleepbandtest.event.ConnectEvent;
 import com.icecold.sleepbandtest.event.NotifyDataEvent;
 import com.icecold.sleepbandtest.event.ScanDeviceEvent;
 import com.icecold.sleepbandtest.network.BandLoader;
 import com.icecold.sleepbandtest.network.BaseRequest;
-import com.icecold.sleepbandtest.ui.SelectCityActivity;
+import com.icecold.sleepbandtest.ui.BrightCurveActivity;
+import com.icecold.sleepbandtest.ui.OftenActivity;
+import com.icecold.sleepbandtest.ui.fragment.FullScreenDialog;
 import com.icecold.sleepbandtest.utils.Constant;
 import com.icecold.sleepbandtest.utils.FileUtil;
 import com.icecold.sleepbandtest.utils.GlaUtils;
@@ -87,6 +90,7 @@ import bleshadow.javax.inject.Provider;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import butterknife.OnTouch;
 import io.reactivex.Observable;
 import io.reactivex.ObservableEmitter;
 import io.reactivex.ObservableOnSubscribe;
@@ -113,7 +117,7 @@ public class MainActivity extends AppCompatActivity {
     private static final int SKIP_BYTE = 4;//需要跳过的字节数字
     private static final byte CYCLE_TIME = 0x0f;//循环的次数
     private static final int MY_PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE = 1;
-    private static final String MAC_ADDRESS = "D1:04:CC:0C:F1:F6";
+    private static final String MAC_ADDRESS = "E2:9C:69:37:E4:CE";
     public static final String TAG = "MainActivity";
     @BindView(R.id.tv_message)
     TextView tvMessage;
@@ -153,7 +157,7 @@ public class MainActivity extends AppCompatActivity {
             String zipPath = Environment.getExternalStorageDirectory()
                     + File.separator + FileUtil.DOWNLOAD_FOLDER + File.separator + FileUtil.DOWNLOAD_ZIP;
             File file = new File(zipPath);
-            postFile(file);
+//            postFile(file);
 //            ViseHttp.getOkHttpClient().newCall()
         }
     };
@@ -165,6 +169,8 @@ public class MainActivity extends AppCompatActivity {
     private RxBleConnection mRxBleConnection;
     private Disposable notificationDis;
     private CityAdapter mCityAdapter;
+    private boolean againConnect;
+    private String mMacAddress;
 
     private void postFile(File file) {
         MultipartBody.Builder requestBoby = new MultipartBody.Builder().setType(MultipartBody.FORM);
@@ -175,6 +181,7 @@ public class MainActivity extends AppCompatActivity {
         }
         requestBoby.addFormDataPart("userid", "909ea610531f4ac88c07161369367513");
         requestBoby.addFormDataPart("ver", "1");
+
 //        Request request = new Request.Builder().url(Constant.BASE_URL+"pillow/uploadPillowData").post(requestBoby.build()).tag("zhidao").build();
 //        ViseHttp.getOkHttpClient().newCall(request).enqueue(new Callback() {
 //            @Override
@@ -237,9 +244,13 @@ public class MainActivity extends AppCompatActivity {
             } else {
                 String address = result.getContents();
                 refreshLogTextView("正在连接中稍等...\r\n");
-                scanAndConnectDevice(address);
+                ViseLog.i("扫描到的mac地址 = "+address);
+                //这个是使用rxble库进行操作的
+//                scanAndConnectDevice(address);
 //                String realAddress = reversalMacAddress(address);
-//                BluetoothDeviceManager.getInstance().connectByMac(realAddress);
+                againConnect = true;
+                mMacAddress = address;
+                BluetoothDeviceManager.getInstance().connectByMac(address);
             }
         }
         if (requestCode == RESULT_CANCELED) {
@@ -290,6 +301,10 @@ public class MainActivity extends AppCompatActivity {
 //                startActivity(intent3);
 //                showUncertainDialog();
 
+//                refreshLogTextView("正在连接中稍等...\r\n");
+//                againConnect = true;
+//                mMacAddress = MAC_ADDRESS;
+//                BluetoothDeviceManager.getInstance().connectByMac(MAC_ADDRESS);
                 IntentIntegrator integrator = new IntentIntegrator(this);
                 integrator.setOrientationLocked(false);
                 integrator.initiateScan();
@@ -302,29 +317,29 @@ public class MainActivity extends AppCompatActivity {
 //                ToastUtil.show(this,"断开连接");
 //                ToastUtil.showAtCenter(this,"断开连接");
 //                ToastUtil.makeText(this,"断开连接",Toast.LENGTH_SHORT);
-//                if (bluetoothLeDevice != null) {
-//                    BluetoothDeviceManager.getInstance().disconnect(bluetoothLeDevice);
-//                }
+                if (bluetoothLeDevice != null) {
+                    BluetoothDeviceManager.getInstance().disconnect(bluetoothLeDevice);
+                }
                 break;
             case R.id.btn_read_battery:
-                byte[] deleteUserData = new byte[]{0x44};
-                mRxBleConnection
-                        .writeCharacteristic(UUID.fromString(GlaUtils.BAND_PEGASI_LOG_DATA_CHARACTERISTIC_UUID),deleteUserData)
-                        .subscribeOn(Schedulers.computation())
-                        .observeOn(AndroidSchedulers.mainThread())
-                        .subscribe(new Consumer<byte[]>() {
-                            @Override
-                            public void accept(byte[] bytes) throws Exception {
-                                if (bytes[0] == 0x44){
-                                    refreshLogTextView("删除数据成功\r\n");
-                                }
-                            }
-                        }, new Consumer<Throwable>() {
-                            @Override
-                            public void accept(Throwable throwable) throws Exception {
-                                refreshLogTextView("删除数据失败\r\n");
-                            }
-                        });
+
+//                mRxBleConnection
+//                        .writeCharacteristic(UUID.fromString(GlaUtils.BAND_PEGASI_LOG_DATA_CHARACTERISTIC_UUID),deleteUserData)
+//                        .subscribeOn(Schedulers.computation())
+//                        .observeOn(AndroidSchedulers.mainThread())
+//                        .subscribe(new Consumer<byte[]>() {
+//                            @Override
+//                            public void accept(byte[] bytes) throws Exception {
+//                                if (bytes[0] == 0x44){
+//                                    refreshLogTextView("删除数据成功\r\n");
+//                                }
+//                            }
+//                        }, new Consumer<Throwable>() {
+//                            @Override
+//                            public void accept(Throwable throwable) throws Exception {
+//                                refreshLogTextView("删除数据失败\r\n");
+//                            }
+//                        });
 //                mRxBleConnection
 //                        .readCharacteristic(UUID.fromString(GlaUtils.PILLOW_CHAR_UUID_BLVL))
 //                        .observeOn(AndroidSchedulers.mainThread())
@@ -342,79 +357,67 @@ public class MainActivity extends AppCompatActivity {
 //                        });
                 //读取电量
                 if (bluetoothLeDevice != null) {
-//                    BluetoothDeviceManager.getInstance().bindChannel(bluetoothLeDevice,PropertyType.PROPERTY_READ,
-//                            UUID.fromString(GlaUtils.PILLOW_SERV_UUID_BATT),UUID.fromString(GlaUtils.PILLOW_CHAR_UUID_BLVL),
-//                            null);
-//                    BluetoothDeviceManager.getInstance().read(bluetoothLeDevice);
-
-                    BluetoothDeviceManager.getInstance().bindChannel(bluetoothLeDevice, PropertyType.PROPERTY_WRITE,
-                            UUID.fromString(GlaUtils.BAND_PEGASI_SERVICE_UUID),
-                            UUID.fromString(GlaUtils.BAND_PEGASI_LOG_DATA_CHARACTERISTIC_UUID),
+                    BluetoothDeviceManager.getInstance().bindChannel(bluetoothLeDevice,PropertyType.PROPERTY_READ,
+                            UUID.fromString(GlaUtils.PILLOW_SERV_UUID_BATT),UUID.fromString(GlaUtils.PILLOW_CHAR_UUID_BLVL),
                             null);
-                    BluetoothDeviceManager.getInstance().write(bluetoothLeDevice, deleteUserData);
+                    BluetoothDeviceManager.getInstance().read(bluetoothLeDevice);
+
+//                    BluetoothDeviceManager.getInstance().bindChannel(bluetoothLeDevice, PropertyType.PROPERTY_WRITE,
+//                            UUID.fromString(GlaUtils.BAND_PEGASI_SERVICE_UUID),
+//                            UUID.fromString(GlaUtils.BAND_PEGASI_LOG_DATA_CHARACTERISTIC_UUID),
+//                            null);
+//                    BluetoothDeviceManager.getInstance().write(bluetoothLeDevice, deleteUserData);
                 }
                 break;
             case R.id.btn_sync_time:
-                //写数据设备
-                if (bluetoothLeDevice != null) {
-                    long currentTimeMillis = System.currentTimeMillis() / 1000;
-                    byte[] data = new byte[]{(byte) (currentTimeMillis & 0xff),
-                            (byte) ((currentTimeMillis >> 8) & 0xff),
-                            (byte) ((currentTimeMillis >> 16) & 0xff),
-                            (byte) ((currentTimeMillis >> 24) & 0xff),
-                            (byte) 0, (byte) 0, (byte) 0, (byte) 0};
-                    String hexStr = HexUtil.encodeHexStr(data);
-                    Log.d("mainActivity", "当前时间的十六进制 = " + hexStr);
-                    refreshLogTextView("写入的时间戳 time = " + currentTimeMillis + "\r\n");
-                    BluetoothDeviceManager.getInstance().bindChannel(bluetoothLeDevice, PropertyType.PROPERTY_WRITE,
-                            UUID.fromString(GlaUtils.BAND_PEGASI_SERVICE_UUID), UUID.fromString(GlaUtils.BAND_PEGASI_SYNC_TIME_CHARACTERISTIC_UUID),
-                            null);
-                    BluetoothDeviceManager.getInstance().write(bluetoothLeDevice, data);
-                }
+                syncTimeData();
                 break;
             case R.id.btn_read_time:
-                notificationDis = mRxBleConnection
-                        .setupNotification(UUID.fromString(GlaUtils.BAND_PEGASI_SYNC_TIME_CHARACTERISTIC_UUID))
-                        .doOnNext(new Consumer<Observable<byte[]>>() {
-                            @Override
-                            public void accept(Observable<byte[]> observable) throws Exception {
-                                byte[] timeRead = "R".getBytes();
-                                mRxBleConnection.writeCharacteristic(UUID.fromString(GlaUtils.BAND_PEGASI_SYNC_TIME_CHARACTERISTIC_UUID),timeRead)
-                                        .observeOn(AndroidSchedulers.mainThread())
-                                        .subscribe(new Consumer<byte[]>() {
-                                            @Override
-                                            public void accept(byte[] bytes) throws Exception {
-                                                refreshLogTextView("使能成功后写入读取时间的值\r\n");
-                                            }
-                                        });
-                                ViseLog.d("使能notification");
-                            }
-                        })
-                        .flatMap(new Function<Observable<byte[]>, ObservableSource<byte[]>>() {
-                            @Override
-                            public ObservableSource<byte[]> apply(Observable<byte[]> observable) throws Exception {
-                                return observable;
-                            }
-                        })
-                        .subscribe(new Consumer<byte[]>() {
-                            @Override
-                            public void accept(byte[] bytes) throws Exception {
-                                String hexStr = HexUtil.encodeHexStr(bytes);
-                                ViseLog.d("使能得到的值 = " + hexStr);
-                            }
-                        }, new Consumer<Throwable>() {
-                            @Override
-                            public void accept(Throwable throwable) throws Exception {
-                                ViseLog.d("使能错误 msg = " + throwable.getMessage());
-                            }
-                        });
-                //读取时间
-                if (bluetoothLeDevice != null) {
-                    BluetoothDeviceManager.getInstance().bindChannel(bluetoothLeDevice, PropertyType.PROPERTY_READ,
-                            UUID.fromString(GlaUtils.BAND_PEGASI_SERVICE_UUID), UUID.fromString(GlaUtils.BAND_PEGASI_SYNC_TIME_CHARACTERISTIC_UUID),
-                            null);
-                    BluetoothDeviceManager.getInstance().read(bluetoothLeDevice);
+                if (mRxBleConnection != null) {
+                    notificationDis = mRxBleConnection
+                            .setupNotification(UUID.fromString(GlaUtils.BAND_PEGASI_SYNC_TIME_CHARACTERISTIC_UUID))
+                            .doOnNext(new Consumer<Observable<byte[]>>() {
+                                @Override
+                                public void accept(Observable<byte[]> observable) throws Exception {
+                                    byte[] timeRead = "R".getBytes();
+                                    mRxBleConnection.writeCharacteristic(UUID.fromString(GlaUtils.BAND_PEGASI_SYNC_TIME_CHARACTERISTIC_UUID),timeRead)
+                                            .observeOn(AndroidSchedulers.mainThread())
+                                            .subscribe(new Consumer<byte[]>() {
+                                                @Override
+                                                public void accept(byte[] bytes) throws Exception {
+                                                    refreshLogTextView("使能成功后写入读取时间的值\r\n");
+                                                }
+                                            });
+                                    ViseLog.d("使能notification");
+                                }
+                            })
+                            .flatMap(new Function<Observable<byte[]>, ObservableSource<byte[]>>() {
+                                @Override
+                                public ObservableSource<byte[]> apply(Observable<byte[]> observable) throws Exception {
+                                    return observable;
+                                }
+                            })
+                            .subscribe(new Consumer<byte[]>() {
+                                @Override
+                                public void accept(byte[] bytes) throws Exception {
+                                    String hexStr = HexUtil.encodeHexStr(bytes);
+                                    ViseLog.d("使能得到的值 = " + hexStr);
+                                }
+                            }, new Consumer<Throwable>() {
+                                @Override
+                                public void accept(Throwable throwable) throws Exception {
+                                    ViseLog.d("使能错误 msg = " + throwable.getMessage());
+                                }
+                            });
                 }
+                //读取时间
+                readTimeData();
+//                if (bluetoothLeDevice != null) {
+//                    BluetoothDeviceManager.getInstance().bindChannel(bluetoothLeDevice, PropertyType.PROPERTY_READ,
+//                            UUID.fromString(GlaUtils.BAND_PEGASI_SERVICE_UUID), UUID.fromString(GlaUtils.BAND_PEGASI_SYNC_TIME_CHARACTERISTIC_UUID),
+//                            null);
+//                    BluetoothDeviceManager.getInstance().read(bluetoothLeDevice);
+//                }
                 break;
             case R.id.btn_sync_data:
                 if (ContextCompat.checkSelfPermission(this,
@@ -433,18 +436,19 @@ public class MainActivity extends AppCompatActivity {
                 }
                 break;
             case R.id.btn_open_time:
-                View contentView = LayoutInflater.from(this).inflate(R.layout.activity_select_city, null);
-                //处理popWindow的显示内容
-                handleLogic(contentView);
-                //创建并且显示popWindow
-                CustomPopWindow customPopWindow = new CustomPopWindow.PopupWindowBuilder(this)
-                        .setView(contentView)
-                        .enableOutsideTouchableDissmiss(true)
-                        .size(openTime.getWidth(), ViewGroup.LayoutParams.WRAP_CONTENT)
-                        .create()
-                        .showAsDropDown(openTime, 0, 15);
-//                Intent intent2 = new Intent(this, OftenActivity.class);
-//                startActivity(intent2);
+//                View contentView = LayoutInflater.from(this).inflate(R.layout.activity_select_city, null);
+//                //处理popWindow的显示内容
+//                handleLogic(contentView);
+//                //创建并且显示popWindow
+//                CustomPopWindow customPopWindow = new CustomPopWindow.PopupWindowBuilder(this)
+//                        .setView(contentView)
+//                        .enableOutsideTouchableDissmiss(true)
+//                        .size(openTime.getWidth(), ViewGroup.LayoutParams.WRAP_CONTENT)
+//                        .create()
+//                        .showAsDropDown(openTime, 0, 15);
+                Intent intent2 = new Intent(this, OftenActivity.class);
+                intent2.putExtra(Constant.IS_TWO_PEOPLE,true);
+                startActivity(intent2);
 
                 break;
             case R.id.btn_off_time:
@@ -459,21 +463,35 @@ public class MainActivity extends AppCompatActivity {
                 }
                 break;
             case R.id.btn_skip_next:
-                Intent intent = new Intent(this, SelectCityActivity.class);
-//                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
-                startActivity(intent);
+//                Intent intent = new Intent(this, CustomViewActivity.class);
+////                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+//                startActivity(intent);
+//                postQuestion();
                 break;
             case R.id.btn_firmware_update:
-                bandLoader.getVersion("PGY8S01","1.0.0","1.0.0")
-                        .subscribeOn(Schedulers.io())
-                        .unsubscribeOn(Schedulers.io())
-                        .observeOn(AndroidSchedulers.mainThread())
-                        .subscribe(new Consumer<RequestBody>() {
-                            @Override
-                            public void accept(RequestBody requestBody) throws Exception {
-                                ViseLog.i("请求得到的响应体 = "+requestBody.toString());
-                            }
-                        });
+
+                deleteAllDeviceData();
+                //使能光亮值的通道
+//                if (bluetoothLeDevice != null) {
+//                    BluetoothDeviceManager.getInstance().initEnableChannel(bluetoothLeDevice);
+//                    BluetoothDeviceManager.getInstance().bindChannel(bluetoothLeDevice, PropertyType.PROPERTY_NOTIFY,
+//                            UUID.fromString(GlaUtils.PEGASI_BRAINWAVE_SERVICE_UUID),
+//                            UUID.fromString(GlaUtils.PEGASI_BRAINWAVE_TX_SERVICE_CHARACTERISTIC_UUID),
+//                            null);
+//                    BluetoothDeviceManager.getInstance().registerNotify(bluetoothLeDevice, false);
+//                }
+
+//                bandLoader.getVersion("PGY8S01","1.0.0","1.0.0")
+//                        .subscribeOn(Schedulers.io())
+//                        .unsubscribeOn(Schedulers.io())
+//                        .observeOn(AndroidSchedulers.mainThread())
+//                        .subscribe(new Consumer<RequestBody>() {
+//                            @Override
+//                            public void accept(RequestBody requestBody) throws Exception {
+//                                ViseLog.i("请求得到的响应体 = "+requestBody.toString());
+//                            }
+//                        });
+
 
 //                ViseHttp.DOWNLOAD("sleep_sensor/latest.txt?model=PGY8S01&hw=1.0.0&fw=1.0.0")
 //                        .setDirName("fire")
@@ -502,6 +520,48 @@ public class MainActivity extends AppCompatActivity {
             default:
                 break;
         }
+    }
+
+    private void readTimeData() {
+        if (bluetoothLeDevice != null) {
+            byte[] data = new byte[]{'R'};
+
+            BluetoothDeviceManager.getInstance().bindChannel(bluetoothLeDevice, PropertyType.PROPERTY_WRITE,
+                    UUID.fromString(GlaUtils.BAND_PEGASI_SERVICE_UUID), UUID.fromString(GlaUtils.BAND_PEGASI_SYNC_TIME_CHARACTERISTIC_UUID),
+                    null);
+            BluetoothDeviceManager.getInstance().write(bluetoothLeDevice, data);
+        }
+    }
+    private void deleteAllDeviceData(){
+        byte[] deleteUserData = new byte[]{0x44};
+        if (bluetoothLeDevice != null) {
+            refreshLogTextView("删除所有设备里面的数据\r\n");
+            BluetoothDeviceManager.getInstance().bindChannel(bluetoothLeDevice, PropertyType.PROPERTY_WRITE,
+                    UUID.fromString(GlaUtils.BAND_PEGASI_SERVICE_UUID),
+                    UUID.fromString(GlaUtils.BAND_PEGASI_LOG_DATA_CHARACTERISTIC_UUID),
+                    null);
+            BluetoothDeviceManager.getInstance().write(bluetoothLeDevice, deleteUserData);
+        }
+    }
+
+    @OnTouch(R.id.btn_skip_next)
+    public boolean onTouchListener(View view, MotionEvent event){
+        switch (event.getAction()) {
+            case MotionEvent.ACTION_DOWN:
+                //设置这个无效
+                FullScreenDialog.newInstance().show(getSupportFragmentManager(),"full_dialog");
+                break;
+            case MotionEvent.ACTION_MOVE:
+
+                break;
+            case MotionEvent.ACTION_UP:
+                FullScreenDialog fullScreen = (FullScreenDialog) getSupportFragmentManager().findFragmentByTag("full_dialog");
+                if (fullScreen != null) {
+                    fullScreen.dismissAllowingStateLoss();
+                }
+                break;
+        }
+        return false;
     }
 
     private void handleLogic(View contentView) {
@@ -541,8 +601,12 @@ public class MainActivity extends AppCompatActivity {
                     super.onMeasure(recycler, state, widthSpec, heightSpec);
                 }
             }
+
+            @Override
+            public boolean isAutoMeasureEnabled() {
+                return false;
+            }
         };
-        linearLayoutManager.setAutoMeasureEnabled(false);
         LinearLayoutManager layoutManager = new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false);
         layoutManager.setAutoMeasureEnabled(true);
         cityRecyclerView.setHasFixedSize(false);
@@ -595,6 +659,21 @@ public class MainActivity extends AppCompatActivity {
         cityItem.add("Jaipur");
         cityItem.add("Lucknow");
         cityItem.add("Kanpur");
+    }
+    private void postQuestion(){
+        ViseHttp.POST("common/query-qs-template")
+                .addForm("tempalateId","1")
+                .request(new ACallback<BaseResponse<QuestionInfoData>>() {
+                    @Override
+                    public void onSuccess(BaseResponse<QuestionInfoData> questionInfoDataBaseResponse) {
+                        ViseLog.i("请求成功 data = " + questionInfoDataBaseResponse.toString());
+                    }
+
+                    @Override
+                    public void onFail(int errCode, String errMsg) {
+                        ViseLog.i("请求失败 errorCode = " + errCode + "errorMsg = " + errMsg);
+                    }
+                });
     }
     private void updateData(List<String> mData) {
         mCityAdapter.setNewData(mData);
@@ -746,6 +825,17 @@ public class MainActivity extends AppCompatActivity {
         transaction.add(uncertainDialog,"dialog");
         transaction.commitAllowingStateLoss();
     }
+    private void notifyTime(){
+        if (bluetoothLeDevice != null) {
+            //首先需要初始化
+            BluetoothDeviceManager.getInstance().initEnableChannel(bluetoothLeDevice);
+
+            BluetoothDeviceManager.getInstance().bindChannel(bluetoothLeDevice, PropertyType.PROPERTY_NOTIFY,
+                    UUID.fromString(GlaUtils.BAND_PEGASI_SERVICE_UUID), UUID.fromString(GlaUtils.BAND_PEGASI_SYNC_TIME_CHARACTERISTIC_UUID),
+                    null);
+            BluetoothDeviceManager.getInstance().registerNotify(bluetoothLeDevice, false);
+        }
+    }
 
     private void syncDeviceAllData() {
         initDataWithSync();
@@ -783,6 +873,7 @@ public class MainActivity extends AppCompatActivity {
                 //显示成功
                 if (event.getDeviceMirror() != null) {
                     ViseLog.d("mainActivity 连接成功了");
+                    againConnect = false;
                     bluetoothLeDevice = event.getDeviceMirror().getBluetoothLeDevice();
                     refreshLogTextView("连接成功了\r\n");
                     //设置重连接
@@ -792,17 +883,27 @@ public class MainActivity extends AppCompatActivity {
                         ViseLog.d("连接后得到的蓝牙对象 = " + bluetoothLeDevice.toString());
                         SPUtils.getInstance(Constant.SHARED_PREFERENCE_NAME).put(Constant.BLUETOOTH_DEVICE_KEY, Base64.encodeToString(bluetoothByte, 0));
 
-                        BluetoothDeviceManager.getInstance().setmDeviceReconnected(bluetoothLeDevice, true);
+                        BluetoothDeviceManager.getInstance().setmDeviceReconnected(bluetoothLeDevice, false);
                     }
                 }
             } else {
                 //默认是失败的
                 if (event.isDisconnected()) {
                     //主动断开连接
-                    refreshLogTextView("设备断开连接,可能超时或者远离了\r\n");
+                    refreshLogTextView("设备断开连接,可能超时或者远离了或者主动断开\r\n");
                 } else {
-                    //不是主动断开连接的,都是被动执行的
-                    refreshLogTextView("连接时错误\r\n");
+                    if (againConnect) {
+                        againConnect = false;
+                        byte[] bytes = new byte[1];
+                        BluetoothDevice bluetoothDevice = BluetoothDeviceManager.getInstance().obtainBluetoothDevice(mMacAddress);
+                        if (bluetoothDevice != null) {
+                            BluetoothLeDevice bluetoothLeDevice = new BluetoothLeDevice(bluetoothDevice, -60, bytes, System.currentTimeMillis());
+                            BluetoothDeviceManager.getInstance().connect(bluetoothLeDevice);
+                        }
+                    }else {
+                        //不是主动断开连接的,都是被动执行的
+                        refreshLogTextView("连接时错误\r\n");
+                    }
                 }
             }
         }
@@ -819,7 +920,11 @@ public class MainActivity extends AppCompatActivity {
                     if (bluetoothGattChannel.getPropertyType() == PropertyType.PROPERTY_WRITE &&
                             bluetoothGattChannel.getCharacteristicUUID().
                                     compareTo(UUID.fromString(GlaUtils.BAND_PEGASI_SYNC_TIME_CHARACTERISTIC_UUID)) == 0) {
-                        refreshLogTextView("写入时间成功了\r\n");
+                        byte[] data = event.getData();
+                        if (data[0] == 87){
+                            refreshLogTextView("写入时间成功了\r\n");
+                            notifyTime();
+                        }
                     }
                     //接收到时间返回
                     if (bluetoothGattChannel.getPropertyType() == PropertyType.PROPERTY_READ &&
@@ -850,6 +955,24 @@ public class MainActivity extends AppCompatActivity {
                                         null);
                                 BluetoothDeviceManager.getInstance().write(bluetoothLeDevice, queryLatestTime);
                             }
+                        }
+                    }
+                    //使能同步时间特征成功
+                    if (bluetoothGattChannel.getPropertyType() == PropertyType.PROPERTY_NOTIFY &&
+                            bluetoothGattChannel.getCharacteristicUUID().
+                                    compareTo(UUID.fromString(GlaUtils.BAND_PEGASI_SYNC_TIME_CHARACTERISTIC_UUID)) == 0) {
+                        if (Arrays.equals(event.getData(), BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE)) {
+                            refreshLogTextView("使能同步时间特征成功了\r\n");
+                        }
+                    }
+                    //使能光亮值特征成功
+                    if (bluetoothGattChannel.getPropertyType() == PropertyType.PROPERTY_NOTIFY &&
+                            bluetoothGattChannel.getCharacteristicUUID().
+                                    compareTo(UUID.fromString(GlaUtils.PEGASI_BRAINWAVE_TX_SERVICE_CHARACTERISTIC_UUID)) == 0) {
+                        if (Arrays.equals(event.getData(), BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE)) {
+                            //跳转到对应的界面中
+                            Intent intent = new Intent(MainActivity.this, BrightCurveActivity.class);
+                            startActivity(intent);
                         }
                     }
                     //使能时时模式特征成功
@@ -898,6 +1021,25 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private void syncTimeData() {
+        //写数据设备
+        if (bluetoothLeDevice != null) {
+            long currentTimeMillis = System.currentTimeMillis() / 1000;
+            byte[] data = new byte[]{'W',(byte) (currentTimeMillis & 0xff),
+                    (byte) ((currentTimeMillis >> 8) & 0xff),
+                    (byte) ((currentTimeMillis >> 16) & 0xff),
+                    (byte) ((currentTimeMillis >> 24) & 0xff),
+                    (byte) 0, (byte) 0, (byte) 0, (byte) 0};
+            String hexStr = HexUtil.encodeHexStr(data);
+            Log.d("mainActivity", "当前时间的十六进制 = " + hexStr);
+            refreshLogTextView("写入的时间戳 time = " + currentTimeMillis + "\r\n");
+            BluetoothDeviceManager.getInstance().bindChannel(bluetoothLeDevice, PropertyType.PROPERTY_WRITE,
+                    UUID.fromString(GlaUtils.BAND_PEGASI_SERVICE_UUID), UUID.fromString(GlaUtils.BAND_PEGASI_SYNC_TIME_CHARACTERISTIC_UUID),
+                    null);
+            BluetoothDeviceManager.getInstance().write(bluetoothLeDevice, data);
+        }
+    }
+
     byte[] latestWriteTime;//低位在前
     int numberPager;
 
@@ -939,7 +1081,7 @@ public class MainActivity extends AppCompatActivity {
                             numberPager = Utils.getInstance().byteToInt(number);
                             ViseLog.i("得到设备上数据的总页数 pager = " + numberPager);
                             //发送第一条数据
-                            if (numberPager > 3 && bluetoothLeDevice != null) {
+                            if (numberPager > 1 && bluetoothLeDevice != null) {
                                 byte[] readFirstData = new byte[]{0x53, 0x41, 0, 0};
                                 BluetoothDeviceManager.getInstance().bindChannel(bluetoothLeDevice, PropertyType.PROPERTY_WRITE,
                                         UUID.fromString(GlaUtils.BAND_PEGASI_SERVICE_UUID),
@@ -1019,6 +1161,14 @@ public class MainActivity extends AppCompatActivity {
                         }
                     }
                 }
+                //同步的时间通知回调
+                if (event.getBluetoothGattChannel().getCharacteristicUUID()
+                        .compareTo(UUID.fromString(GlaUtils.BAND_PEGASI_SYNC_TIME_CHARACTERISTIC_UUID)) == 0) {
+
+                    byte[] subBytes = HexUtil.subBytes(event.getData(), 2, 4);
+                    ViseLog.d("读取的时间值 = "+HexUtil.encodeHexStr(subBytes));
+                    refreshLogTextView("读取到的时间 = "+HexUtil.byteToInt(subBytes,0,false));
+                }
             }
         }
     }
@@ -1038,6 +1188,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void initViewAndEvent() {
+        againConnect = false;
         tvMessage.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View view, MotionEvent event) {
@@ -1190,7 +1341,7 @@ public class MainActivity extends AppCompatActivity {
                 });
         servicesDisposable.add(stateDisposable);
         */
-        /*
+
         //判断是不是6.0以上的设备
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             //判断是否有权限
@@ -1211,7 +1362,6 @@ public class MainActivity extends AppCompatActivity {
             //判断手机是否打开蓝牙
             enableBluetooth();
         }
-        */
     }
 
     private void enableBluetooth() {

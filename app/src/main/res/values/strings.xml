@@ -45,4 +45,6 @@
     <string name="device_start_storage">Start storage</string>
     <string name="device_erasure">Erasure</string>
     <string name="read_data_draw">Read data drawed</string>
+    <string name="long_press_stop">长按停止</string>
+    <string name="second_to_stop">秒后停止</string>
 </resources>

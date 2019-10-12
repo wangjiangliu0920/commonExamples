@@ -42,5 +42,16 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         />
+    <com.icecold.sleepbandtest.widget.RoundProgressBar
+        android:id="@+id/round_progress"
+        android:layout_width="@dimen/dp_40"
+        android:layout_height="@dimen/dp_40"
+        app:rpb_round_color="@color/round_color"
+        app:rpb_round_progress_color="@color/roundProgressColor"
+        app:rpb_round_width="@dimen/dp_10"
+        app:rpb_text_is_displayable="false"
+        app:rpb_max="100"
+        app:rpb_style="STROKE"
+        />
 
 </LinearLayout>

@@ -7,91 +7,127 @@
     android:orientation="vertical"
     android:background="@color/white"
     tools:context=".MainActivity">
-    <ScrollView
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@color/colorAccent"
+        android:textSize="@dimen/sp_16"
+        android:text="文字内容"
+        android:textStyle="bold"
+        android:layout_gravity="center_horizontal"
+        android:visibility="gone"
+        />
+    <LinearLayout
+        android:orientation="vertical"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
-        <LinearLayout
-            android:orientation="vertical"
+        android:layout_height="match_parent"
+        >
+        <TextView
+            android:id="@+id/tv_message"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
-            <TextView
-                android:id="@+id/tv_message"
-                android:layout_width="match_parent"
-                android:layout_height="200dp"
-                android:scrollbars="vertical"
-                android:fadeScrollbars="false"
-                android:scrollbarStyle="insideOverlay"
-                android:scrollbarFadeDuration="1000"
-                android:textSize="15sp"
-                android:textColor="#0e0e0e"
-                />
-            <Button
-                android:id="@+id/btn_connect"
-                android:text="@string/connect_device"
-                style="@style/Button.Style"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
-            <Button
-                android:id="@+id/btn_disconnect"
-                android:text="@string/disconnect_device"
-                style="@style/Button.Style"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
-            <Button
-                android:id="@+id/btn_sync_data"
-                android:text="@string/device_syncall_data"
-                style="@style/Button.Style"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
-            <Button
-                android:id="@+id/btn_read_battery"
-                android:text="@string/device_read_battery"
-                style="@style/Button.Style"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
-            <Button
-                android:id="@+id/btn_read_version"
-                android:text="@string/device_read_version"
-                style="@style/Button.Style"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
-            <Button
-                android:id="@+id/btn_open_time"
-                android:text="@string/device_open_time"
-                style="@style/Button.Style"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
-            <Button
-                android:id="@+id/btn_off_time"
-                android:text="@string/device_off_time"
-                style="@style/Button.Style"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
-            <Button
-                android:id="@+id/btn_sync_time"
-                android:text="@string/device_sync_time"
-                style="@style/Button.Style"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
-            <Button
-                android:id="@+id/btn_read_time"
-                android:text="@string/device_read_time"
-                style="@style/Button.Style"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
-            <Button
-                android:id="@+id/btn_firmware_update"
-                android:text="@string/device_firmware_update"
-                style="@style/Button.Style"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
-            <Button
-                android:id="@+id/btn_skip_next"
-                android:text="@string/skip_next"
-                style="@style/Button.Style"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
-        </LinearLayout>
-    </ScrollView>
+            android:layout_height="200dp"
+            android:scrollbars="vertical"
+            android:fadeScrollbars="false"
+            android:scrollbarStyle="insideOverlay"
+            android:scrollbarFadeDuration="1000"
+            android:textSize="15sp"
+            android:textColor="#0e0e0e"
+            />
+        <View
+            android:layout_width="wrap_content"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            />
+        <Button
+            android:id="@+id/btn_connect"
+            android:text="@string/connect_device"
+            style="@style/Button.Style"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            />
+        <Button
+            android:id="@+id/btn_disconnect"
+            android:text="@string/disconnect_device"
+            style="@style/Button.Style"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+        <Button
+            android:id="@+id/btn_sync_data"
+            android:text="@string/device_syncall_data"
+            style="@style/Button.Style"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="visible"
+            />
+        <Button
+            android:id="@+id/btn_read_battery"
+            android:text="@string/device_read_battery"
+            style="@style/Button.Style"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone"
+            />
+        <Button
+            android:id="@+id/btn_read_version"
+            android:text="@string/device_read_version"
+            style="@style/Button.Style"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone"
+            />
+        <Button
+            android:id="@+id/btn_open_time"
+            android:text="@string/device_open_time"
+            style="@style/Button.Style"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="visible"
+            />
+        <Button
+            android:id="@+id/btn_off_time"
+            android:text="@string/device_off_time"
+            style="@style/Button.Style"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone"
+            />
+        <Button
+            android:id="@+id/btn_sync_time"
+            android:text="@string/device_sync_time"
+            style="@style/Button.Style"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="visible"
+            />
+
+        <Button
+            android:id="@+id/btn_read_time"
+            style="@style/Button.Style"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/device_read_time"
+            android:visibility="visible"
+            />
+
+        <Button
+            android:id="@+id/btn_firmware_update"
+            style="@style/Button.Style"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/dp_10"
+            android:text="@string/delete_data" />
+        <Button
+            android:id="@+id/btn_skip_next"
+            android:text="@string/skip_next"
+            style="@style/Button.Style"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone"
+            />
+    </LinearLayout>
+    <!--<android.support.v4.widget.NestedScrollView-->
+        <!--android:layout_width="match_parent"-->
+        <!--android:layout_height="match_parent">-->
+    <!--</android.support.v4.widget.NestedScrollView>-->
 
 </LinearLayout>

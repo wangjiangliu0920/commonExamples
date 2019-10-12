@@ -1,8 +1,12 @@
 package com.icecold.sleepbandtest.common;
 
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothManager;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
+import android.text.TextUtils;
 
 import com.icecold.sleepbandtest.callBack.SingleMacFilterScanCallback;
 import com.icecold.sleepbandtest.event.CallbackDataEvent;
@@ -23,8 +27,6 @@ import com.vise.baseble.model.BluetoothLeDeviceStore;
 import com.vise.baseble.utils.HexUtil;
 import com.vise.log.ViseLog;
 import com.vise.xsnow.event.BusManager;
-
-import org.greenrobot.eventbus.EventBus;
 
 import java.util.LinkedList;
 import java.util.Queue;
@@ -79,13 +81,13 @@ public class BluetoothDeviceManager {
             }
             ViseLog.i("notify success:" + HexUtil.encodeHexStr(data));
             synchronized (lock){
-                EventBus.getDefault().post(notifyDataEvent.setData(data)
-                        .setBluetoothGattChannel(bluetoothGattInfo)
-                        .setBluetoothLeDevice(bluetoothLeDevice));
+//                EventBus.getDefault().post(notifyDataEvent.setData(data)
+//                        .setBluetoothGattChannel(bluetoothGattInfo)
+//                        .setBluetoothLeDevice(bluetoothLeDevice));
+                BusManager.getBus().post(notifyDataEvent.setData(data)
+                    .setBluetoothLeDevice(bluetoothLeDevice)
+                    .setBluetoothGattChannel(bluetoothGattInfo));
             }
-//            BusManager.getBus().post(notifyDataEvent.setData(data)
-//                    .setBluetoothLeDevice(bluetoothLeDevice)
-//                    .setBluetoothGattChannel(bluetoothGattInfo));
         }
 
         @Override
@@ -171,6 +173,27 @@ public class BluetoothDeviceManager {
     public void connectByMac(String deviceMac){
         connectByMac(deviceMac,connectCallback);
 //        ViseBle.getInstance().connectByMac(deviceMac,connectCallback);
+    }
+    /**
+     * 根据蓝牙地址返回一个蓝牙对象
+     * @param macAddress 蓝牙地址
+     * @return 蓝牙对象或为null
+     */
+    public BluetoothDevice obtainBluetoothDevice(String macAddress){
+        if (TextUtils.isEmpty(macAddress)) {
+            return null;
+        }
+        //每次都要返回最新的值
+        BluetoothManager bluetoothManager = (BluetoothManager) ViseBle.getInstance().getContext().getSystemService(Context.BLUETOOTH_SERVICE);
+        BluetoothDevice mBluetoothDevice = null;
+        BluetoothAdapter bluetoothAdapter = null;
+        if (bluetoothManager != null) {
+            bluetoothAdapter = bluetoothManager.getAdapter();
+        }
+        if (bluetoothAdapter != null) {
+            mBluetoothDevice = bluetoothAdapter.getRemoteDevice(macAddress);
+        }
+        return mBluetoothDevice;
     }
 
     public void disconnect(BluetoothLeDevice bluetoothLeDevice) {

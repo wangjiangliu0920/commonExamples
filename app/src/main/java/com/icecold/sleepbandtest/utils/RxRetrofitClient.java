@@ -27,8 +27,8 @@ public class RxRetrofitClient {
     private static final long DEFAULT_READ_TIMEOUT = 15;
     private static final long DEFAULT_WRITE_TIMEOUT = 15;
     private static final long CACHE_MAX_SIZE = 10 * 1024 * 1024;
-//    private static final String BASE_URL_DOUBAN = "https://api.douban.com/v2/movie/";
-    private static final String BASE_URL_DOUBAN = Constant.BASE_URL;
+    private static final String BASE_URL_DOUBAN = "https://api.douban.com/v2/movie/";
+//    private static final String BASE_URL_DOUBAN = Constant.BASE_URL;
     private IDouBanApi douBanApi;
     private Retrofit mRetrofit;
 

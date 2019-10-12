@@ -21,6 +21,7 @@ import android.widget.ViewFlipper;
 import com.icecold.sleepbandtest.R;
 import com.icecold.sleepbandtest.utils.ValueAnimatorUtil;
 import com.icecold.sleepbandtest.widget.CircleProgressbar;
+import com.icecold.sleepbandtest.widget.RoundProgressBar;
 import com.vise.log.ViseLog;
 
 import java.util.ArrayList;
@@ -42,6 +43,9 @@ public class SecondActivity extends AppCompatActivity {
     ViewFlipper viewFlipper;
     @BindView(R.id.span_text)
     TextView spanText;
+    @BindView(R.id.round_progress)
+    RoundProgressBar mProgressBar;
+    int progress;
 
     private Handler handler;
 
@@ -62,7 +66,9 @@ public class SecondActivity extends AppCompatActivity {
     public void allClickEvent(View view) {
         switch (view.getId()) {
             case R.id.start_anim:
-                startProgressAnim();
+                progress = progress+3;
+                mProgressBar.setProgress(progress);
+//                startProgressAnim();
                 break;
             case R.id.skip_movie:
                 skipMovieActivity();
@@ -78,6 +84,7 @@ public class SecondActivity extends AppCompatActivity {
     }
 
     private void initViewAndData() {
+        mProgressBar.setStartAngle(-90);
         ArrayList<String> allAdText = new ArrayList<>();
         allAdText.add("个人所得税");
         allAdText.add("快应用");

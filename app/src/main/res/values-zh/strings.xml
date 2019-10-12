@@ -6,8 +6,8 @@
     <string name="unbind_device">解绑设备</string>
     <string name="device_read_battery">读取电池电量</string>
     <string name="device_read_version">读取版本号</string>
-    <string name="device_open_time">开启时时</string>
-    <string name="device_off_time">关闭时时</string>
+    <string name="device_open_time">开启实时</string>
+    <string name="device_off_time">关闭实时</string>
     <string name="device_query_rate">查询心率</string>
     <string name="device_query_sleep">查询睡眠</string>
     <string name="device_query_statistic_sleep">查询统计睡眠</string>

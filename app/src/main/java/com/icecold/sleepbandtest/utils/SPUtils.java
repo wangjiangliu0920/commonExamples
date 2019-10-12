@@ -4,7 +4,7 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.support.annotation.NonNull;
-import android.support.v4.util.SimpleArrayMap;
+import android.util.ArrayMap;
 
 import com.icecold.sleepbandtest.MyApplication;
 
@@ -23,7 +23,7 @@ import java.util.Set;
 @SuppressLint("ApplySharedPref")
 public final class SPUtils {
 
-    private static final SimpleArrayMap<String, SPUtils> SP_UTILS_MAP = new SimpleArrayMap<>();
+    private static final ArrayMap<String, SPUtils> SP_UTILS_MAP = new ArrayMap<>();
     private SharedPreferences sp;
 
     /**

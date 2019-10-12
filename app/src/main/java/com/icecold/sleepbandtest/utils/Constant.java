@@ -18,8 +18,8 @@ public class Constant {
     /**
      * 主机服务器地址
      */
-//    public static final String BASE_URL = "https://api.pegasiglass.com/glass-v2/";
-    public static final String BASE_URL = "https://assets.pegasiglass.com/app/data/";
+    public static final String BASE_URL = "http://192.168.1.208:8087/";
+//    public static final String BASE_URL = "https://assets.pegasiglass.com/app/data/";
     /**
      * 同步设备时间
      */
@@ -40,5 +40,6 @@ public class Constant {
      * 擦除设备的所有数据
      */
     public static final String ERASURE_DEVICE = "E";
+    public static final String IS_TWO_PEOPLE = "is_two_people";
 
 }

@@ -4,25 +4,23 @@
     package="com.icecold.sleepbandtest">
 
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <!-- 蓝牙相关的权限 -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" /> <!-- 蓝牙相关的权限 -->
     <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-
-    <!-- 读写文件的权限 -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" /> <!-- 读写文件的权限 -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
 
     <application
         android:name=".MyApplication"
         android:allowBackup="true"
+        android:fullBackupContent="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/AppTheme"
-        android:fullBackupContent="true">
+        android:theme="@style/AppTheme">
+        <activity android:name=".ui.BrightCurveActivity"></activity>
         <activity
             android:name=".MainActivity"
             android:configChanges="orientation|keyboardHidden|screenSize"
@@ -38,6 +36,7 @@
             android:screenOrientation="portrait"
             tools:replace="screenOrientation" />
         <activity android:name=".ui.SecondActivity" />
+        <activity android:name=".ui.CustomViewActivity" />
         <activity
             android:name=".ui.OftenActivity"
             android:taskAffinity=".test" />
@@ -47,13 +46,13 @@
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:screenOrientation="landscape">
             <intent-filter>
-                <action android:name="android.intent.action.VIEW"/>
+                <action android:name="android.intent.action.VIEW" />
             </intent-filter>
         </activity>
-
         <activity android:name=".ui.EegActivity" />
-        <activity android:name=".ui.SelectCityActivity"/>
-        <activity android:name=".ui.JetLagActivity"/>
+        <activity android:name=".ui.SelectCityActivity" />
+        <activity android:name=".ui.JetLagActivity" />
+        <activity android:name=".ui.ConstraintActivity" />
     </application>
 
 </manifest>
