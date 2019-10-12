@@ -301,13 +301,13 @@ public class MainActivity extends AppCompatActivity {
 //                startActivity(intent3);
 //                showUncertainDialog();
 
-//                refreshLogTextView("正在连接中稍等...\r\n");
-//                againConnect = true;
-//                mMacAddress = MAC_ADDRESS;
-//                BluetoothDeviceManager.getInstance().connectByMac(MAC_ADDRESS);
-                IntentIntegrator integrator = new IntentIntegrator(this);
-                integrator.setOrientationLocked(false);
-                integrator.initiateScan();
+                refreshLogTextView("正在连接中稍等...\r\n");
+                againConnect = true;
+                mMacAddress = MAC_ADDRESS;
+                BluetoothDeviceManager.getInstance().connectByMac(MAC_ADDRESS);
+//                IntentIntegrator integrator = new IntentIntegrator(this);
+//                integrator.setOrientationLocked(false);
+//                integrator.initiateScan();
                 break;
             case R.id.btn_disconnect:
                 //断开连接以及停止搜索
@@ -470,16 +470,15 @@ public class MainActivity extends AppCompatActivity {
                 break;
             case R.id.btn_firmware_update:
 
-                deleteAllDeviceData();
                 //使能光亮值的通道
-//                if (bluetoothLeDevice != null) {
-//                    BluetoothDeviceManager.getInstance().initEnableChannel(bluetoothLeDevice);
-//                    BluetoothDeviceManager.getInstance().bindChannel(bluetoothLeDevice, PropertyType.PROPERTY_NOTIFY,
-//                            UUID.fromString(GlaUtils.PEGASI_BRAINWAVE_SERVICE_UUID),
-//                            UUID.fromString(GlaUtils.PEGASI_BRAINWAVE_TX_SERVICE_CHARACTERISTIC_UUID),
-//                            null);
-//                    BluetoothDeviceManager.getInstance().registerNotify(bluetoothLeDevice, false);
-//                }
+                if (bluetoothLeDevice != null) {
+                    BluetoothDeviceManager.getInstance().initEnableChannel(bluetoothLeDevice);
+                    BluetoothDeviceManager.getInstance().bindChannel(bluetoothLeDevice, PropertyType.PROPERTY_NOTIFY,
+                            UUID.fromString(GlaUtils.PEGASI_BRAINWAVE_SERVICE_UUID),
+                            UUID.fromString(GlaUtils.PEGASI_BRAINWAVE_TX_SERVICE_CHARACTERISTIC_UUID),
+                            null);
+                    BluetoothDeviceManager.getInstance().registerNotify(bluetoothLeDevice, false);
+                }
 
 //                bandLoader.getVersion("PGY8S01","1.0.0","1.0.0")
 //                        .subscribeOn(Schedulers.io())

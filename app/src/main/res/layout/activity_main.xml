@@ -57,7 +57,7 @@
             style="@style/Button.Style"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:visibility="visible"
+            android:visibility="gone"
             />
         <Button
             android:id="@+id/btn_read_battery"
@@ -81,7 +81,7 @@
             style="@style/Button.Style"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:visibility="visible"
+            android:visibility="gone"
             />
         <Button
             android:id="@+id/btn_off_time"
@@ -97,7 +97,7 @@
             style="@style/Button.Style"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:visibility="visible"
+            android:visibility="gone"
             />
 
         <Button
@@ -106,7 +106,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/device_read_time"
-            android:visibility="visible"
+            android:visibility="gone"
             />
 
         <Button
@@ -115,7 +115,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="@dimen/dp_10"
-            android:text="@string/delete_data" />
+            android:text="光照度" />
         <Button
             android:id="@+id/btn_skip_next"
             android:text="@string/skip_next"
