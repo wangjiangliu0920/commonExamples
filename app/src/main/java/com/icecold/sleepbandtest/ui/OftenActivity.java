@@ -120,6 +120,7 @@ public class OftenActivity extends AppCompatActivity implements RxTimer.RxAction
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_often);
         ButterKnife.bind(this);
+        //传入的值为true代表是双人模式的，传入的值为false表示单人模式，不传的话默认是单人模式
         isTwoPeople = getIntent().getBooleanExtra(Constant.IS_TWO_PEOPLE, false);
 
         Parcel parcel = ParcelableUtil.unmarshall(Base64.decode(
